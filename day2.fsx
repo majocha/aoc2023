@@ -9,6 +9,8 @@ let game s =
     let n, s = sscanf "Game %d: %s" s
     n, [ for c in s |> String.split [ "; "; ", " ] -> sscanf "%d %s" c ]
 
+let games = input |> map game
+
 let possible (_, g) =
     g
     |> List.forall (function
@@ -17,7 +19,7 @@ let possible (_, g) =
         | n, "blue" -> n <= 14
         | _ -> false)
 
-let partOne = input |> map game |> filter possible |> map fst |> sum
+let partOne = games |> filter possible |> map fst |> sum
 
 
 let minSet (_, g) =
@@ -34,4 +36,4 @@ let minSet (_, g) =
 
 let power (r, g, b) = r * g * b
 
-let partTwo = input |> map (game >> minSet >> power) |> sum
+let partTwo = games |> map (minSet >> power) |> sum

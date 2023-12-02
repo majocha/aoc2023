@@ -23,14 +23,12 @@ let partOne = games |> filter possible |> map fst |> sum
 
 
 let minSet (_, g) =
-    let folder state c =
-        let r, g, b = state
-
-        match c with
+    let folder (r, g, b) =
+        function
         | n, "red" when n > r -> n, g, b
         | n, "green" when n > g -> r, n, b
         | n, "blue" when n > b -> r, g, n
-        | _ -> state
+        | _ -> r, g, b
 
     g |> fold folder (0, 0, 0)
 

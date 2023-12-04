@@ -25,6 +25,7 @@ let totalCards = Array.create cards.Length 1
 
 for i, score in matches |> List.indexed do
     for j in i + 1 .. i + score do
-        totalCards[j] <- totalCards[j] + totalCards[i]
+        if j < cards.Length then
+            totalCards[j] <- totalCards[j] + totalCards[i]
 
 let partTwo = sum totalCards

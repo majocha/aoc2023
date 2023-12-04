@@ -9,8 +9,8 @@ let input = System.IO.File.ReadAllLines "4.txt"
 let cards =
     [ for line in input do
           let i, s1, s2 = sscanf "Card %d: %s| %s" line
-          let winning = Regex.Matches(s1, "(\d+)") |> Seq.map _.Value |> map parse<int> |> Set
-          let your = Regex.Matches(s2, "(\d+)") |> Seq.map _.Value |> map parse<int> |> Set
+          let winning = Regex.Matches(s1, "(\d+)") |> Seq.map _.Value |> map int |> Set
+          let your = Regex.Matches(s2, "(\d+)") |> Seq.map _.Value |> map int |> Set
           i, winning, your ]
 
 let matches =

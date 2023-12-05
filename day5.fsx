@@ -12,48 +12,36 @@ let seeds = input[0] |> sscanf "seeds: %s" |> intList
 type Range = { Dest: int64; Source: int64; Length: int64 }
     with
     member r.Contains x = x >= r.Source && x < r.Source + r.Length
-    member r.TryConvert x =
-        if r.Contains x then Some (r.Dest + x - r.Source) else None
+    member r.Convert x = r.Dest + x - r.Source
 
-let mapsInput =  input |> skip 3
-
-let rec splitInput acc chunks = function
-    | [] -> (acc |> rev) :: chunks |> rev
-    | "" :: _ :: input -> splitInput [] ((acc |> rev) :: chunks) input
-    | line :: input -> splitInput (line :: acc) chunks input
-
-splitInput [] [] (input |> skip 3)
 
 let maps =
-    [ for lines in splitInput [] [] mapsInput  do
-        [ for line in lines |> skip 1 do
+    [ for groups in input |> skip 2 |> split [ [ "" ] ]  do
+        [ for line in groups |> skip 1 do
             let d,s, l = sscanf "%d %d %d" line 
             { Dest  =d; Source = s; Length = l }
         ] ]
 
 let convertSeed (ranges: Range list) x =
-    let rec tryRange = function
-    | (r: Range) :: ranges  ->
-        match r.TryConvert x with
-        | Some x1 -> x1
-        | _ -> tryRange ranges
+    match ranges |> List.tryFind (fun r -> r.Contains x) with
+    | Some r -> r.Convert x
     | _ -> x
-    tryRange ranges
 
 let convertOnce seeds ranges = seeds |> List.map (convertSeed ranges)
 
 let rec convert seeds = function
     | [] -> seeds
     | ranges :: maps ->
+        printfn "%A" ranges
         let seeds = convertOnce seeds ranges
         printfn "%A" seeds
         convert seeds maps
 
-let partOne = convert seeds maps
+let partOne = convert seeds maps |> List.min
 
 
 
-
+convert [79] maps
 
 
 

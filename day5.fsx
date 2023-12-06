@@ -114,11 +114,6 @@ let convert ranges mappings =
         function
         | [] -> result |> rev
         | (m: Marker) :: markers ->
-            let offset =
-                match m with
-                | StartOffset(_, ofs) -> ofs
-                | _ -> offset
-
             let currentPosition = m.Position
             let v1 = m.Rank + v
             let changed = v1 <> v
@@ -132,6 +127,7 @@ let convert ranges mappings =
 
             let offset =
                 match m with
+                | StartOffset(_, ofs) -> ofs
                 | EndOffset _ -> 0L
                 | _ -> offset
 

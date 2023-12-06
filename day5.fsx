@@ -11,6 +11,7 @@ let splitByEmptyLine lines =
         | [] -> ((acc |> rev) :: result) |> rev
         | "" :: lines -> split [] ((acc |> rev) :: result) lines
         | line :: lines -> split (line :: acc) result lines
+
     split [] [] lines
 
 let intList s =
@@ -79,9 +80,9 @@ type Marker =
 
     member m.Order =
         match m with
-        | Start _ -> 0
+        | Start _ -> 1
         | End _ -> 2
-        | StartOffset _ -> 1
+        | StartOffset _ -> 0
         | EndOffset _ -> 3
 
     member m.Offset =
@@ -114,32 +115,36 @@ let convert ranges mappings =
         |> sortBy _.Order
         |> sortBy _.Position
 
-    let rec cut v start result =
+    let rec cut v start offset result =
         function
         | [] -> result |> rev
         | (m: Marker) :: markers ->
+            let offset =
+                match m with
+                | StartOffset(_, ofs) -> ofs
+                | _ -> offset
+
             let currentPosition = m.Position
             let v1 = m.Rank + v
             let changed = v1 <> v
 
             let result =
                 match start with
-                | Some startPosition when changed -> Range(startPosition, currentPosition) :: result
+                | Some startPosition when changed -> Range(startPosition + offset, currentPosition + offset) :: result
                 | _ -> result
 
             let start = if changed && v1 >= 2 then Some currentPosition else None
 
-            cut v1 start result markers
+            let offset =
+                match m with
+                | EndOffset _ -> 0L
+                | _ -> offset
 
-    let cutRanges = cut 0 None [] markers
+            cut v1 start offset result markers
 
-    [ for Range(s, e) in cutRanges do
-          match
-              mappings
-              |> List.tryFind (fun (Mapping(Range(s1, e1), offset)) -> s >= s1 && e <= e1)
-          with
-          | Some(Mapping(_, offset)) -> Range(s + offset, e + offset)
-          | _ -> Range(s, e) ]
+    let cutRanges = cut 0 None 0L [] markers
+
+    cutRanges
 
 let rec convertAll ranges =
     function

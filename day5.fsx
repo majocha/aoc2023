@@ -3,12 +3,12 @@
 
 open FSharpPlus
 
-let input = System.IO.File.ReadAllLines "5.txt" |> toList
+module PartOne =
 
-let intList s =
-    s |> String.split [ " " ] |> Seq.map int64 |> toList
+    let input = System.IO.File.ReadAllLines "5.txt" |> toList
 
-module PartOne = 
+    let intList s =
+        s |> String.split [ " " ] |> Seq.map int64 |> toList
 
     let seeds = input[0] |> sscanf "seeds: %s" |> intList
 
@@ -81,6 +81,11 @@ type Marker =
         | StartOffset(_, o) -> o
         | _ -> 0L
 
+let input = System.IO.File.ReadAllLines "5.txt" |> toList
+
+let intList s =
+    s |> String.split [ " " ] |> Seq.map int64 |> toList
+
 let rec parseSeedRanges result =
     function
     | s :: l :: rest -> parseSeedRanges (Range(s, s + l - 1L) :: result) rest
@@ -106,29 +111,21 @@ let convert ranges mappings =
         |> sortBy _.Order
         |> sortBy _.Position
 
-    printfn "%A" markers
+    let rec cut v start result =
+        function
+        | (m: Marker) :: markers ->
+            let currentPosition = m.Position
+            let v1 = m.Rank + v
+            let changed = v1 <> v
 
-    let rec cut v start result markers =
+            let result =
+                match start with
+                | Some startPosition when changed -> Range(startPosition, currentPosition) :: result
+                | _ -> result
 
-        let s, v1 =
-            match markers with
-            | (m: Marker) :: _ ->
-                let s = m.Position
-                let rank = m.Rank
-                s, v + rank
-            | [] -> 0L, v
+            let start = if changed && v1 >= 2 then Some currentPosition else None
 
-        let changed = v1 <> v
-
-        let result =
-            match start with
-            | Some(s1) when changed -> Range(s1, s) :: result
-            | _ -> result
-
-        let start = if changed && v1 >= 2 then Some s else None
-
-        match markers with
-        | _ :: markers -> cut v1 start result markers
+            cut v1 start result markers
         | [] -> result |> rev
 
     let cutRanges = cut 0 None [] markers

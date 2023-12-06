@@ -5,83 +5,148 @@ open FSharpPlus
 
 let input = System.IO.File.ReadAllLines "5.txt" |> toList
 
-let intList s = s |> String.split [ " " ] |> Seq.map int64 |> toList
+let intList s =
+    s |> String.split [ " " ] |> Seq.map int64 |> toList
 
 let seeds = input[0] |> sscanf "seeds: %s" |> intList
 
-type Mapping = { Dest: int64; Source: int64; Length: int64 }
-    with
-    member r.Contains x = x >= r.Source && x < r.Source + r.Length
+type Mapping' =
+    { Dest: int64
+      Source: int64
+      Length: int64 }
+
+    member r.Contains x =
+        x >= r.Source && x < r.Source + r.Length
+
     member r.Convert x = r.Dest + x - r.Source
 
 
 let maps =
-    [ for groups in input |> skip 2 |> split [ [ "" ] ]  do
-        [ for line in groups |> skip 1 do
-            let d,s, l = sscanf "%d %d %d" line 
-            { Dest  =d; Source = s; Length = l }
-        ] ]
+    [ for groups in input |> skip 2 |> split [ [ "" ] ] do
+          [ for line in groups |> skip 1 do
+                let d, s, l = sscanf "%d %d %d" line
+                { Dest = d; Source = s; Length = l } ] ]
 
-let convertSeed (ranges: Mapping list) x =
+let convertSeed (ranges: Mapping' list) x =
     match ranges |> List.tryFind (fun r -> r.Contains x) with
     | Some r -> r.Convert x
     | _ -> x
 
-let convertOnce seeds ranges = seeds |> List.map (convertSeed ranges)
+let convertOnce' seeds ranges = seeds |> List.map (convertSeed ranges)
 
-let rec convert seeds = function
+let rec convert' seeds =
+    function
     | [] -> seeds
     | ranges :: maps ->
-        printfn "%A" ranges
-        let seeds = convertOnce seeds ranges
-        printfn "%A" seeds
-        convert seeds maps
+        let seeds = convertOnce' seeds ranges
+        convert' seeds maps
 
-let partOne = convert seeds maps |> List.min
+let partOne = convert' seeds maps |> List.min
 
-type RangeMarker = Start | End
-type Offset = Offset of int64
 
-let rec parseSeedRanges (rangeMap: Map<int64, RangeMarker>) = function
-    | s :: l :: rest ->
-        let rangeMap = rangeMap |> Map.add s Start |> Map.add (s + l - 1L) End
-        parseSeedRanges rangeMap rest
-    | [] -> rangeMap
+
+
+type Range = Range of start: int64 * stop: int64
+
+type Mapping = Mapping of Range * offset: int64
+
+type Marker =
+    | Start of int64
+    | End of int64
+    | StartOffset of int64 * int64
+    | EndOffset of int64
+
+    member m.Position =
+        match m with
+        | Start p
+        | End p
+        | StartOffset(p, _)
+        | EndOffset p -> p
+
+    member m.Rank =
+        match m with
+        | Start _ -> 2
+        | End _ -> -2
+        | StartOffset _ -> 1
+        | EndOffset _ -> -1
+
+    member m.Order =
+        match m with
+        | Start _ -> 0
+        | End _ -> 2
+        | StartOffset _ -> 1
+        | EndOffset _ -> 3
+
+    member m.Offset =
+        match m with
+        | StartOffset(_, o) -> o
+        | _ -> 0L
+
+let rec parseSeedRanges result =
+    function
+    | s :: l :: rest -> parseSeedRanges (Range(s, s + l - 1L) :: result) rest
+    | [] -> result |> rev
     | _ -> failwith "wrong input"
 
-let initialSeedRanges = parseSeedRanges (Map []) (input[0] |> sscanf "seeds: %s" |> intList)
+let initialRanges = parseSeedRanges [] (input[0] |> sscanf "seeds: %s" |> intList)
 
-let mappings : Map<int64, Offset> list =
-    [ for groups in input |> skip 2 |> split [ [ "" ] ]  do
-        [ for line in groups |> skip 1 do
-            let d, s, l = sscanf "%d %d %d" line
-            s, Offset(d - s)
-            s + l, Offset(0L)
-        ] |> rev |> Map ]
+let mappings: Mapping list list =
+    [ for groups in input |> skip 2 |> split [ [ "" ] ] do
+          [ for line in groups |> skip 1 do
+                let d, s, l = sscanf "%d %d %d" line
+                Mapping(Range(s, s + l - 1L), d - s) ] ]
 
-let convertOnce' ranges mapping =
-    let pois = [ ranges |> Map.keys; mapping |> Map.keys ] |> Seq.concat |> Set
-    let mutable seed = false
-    let mutable offset = 0L
-    [ for p in pois do
-        let ropt, oopt = (ranges |> Map.tryFind p), (mapping |> Map.tryFind p)
-        match ropt, oopt with
-        | None, Some (Offset o1) when seed ->
-            p + offset, End
-            offset <- o1
-            p + offset, Start
-        | None , Some (Offset o) -> offset <- o
-        | Some Start, Some (Offset o) ->
-            
+let convert ranges mappings =
+    let markers =
+        [ for Range(s, e) in ranges do
+              Start s
+              End e
+          for Mapping(Range(s, e), offset) in mappings do
+              StartOffset(s, offset)
+              EndOffset e ]
+        |> sortBy _.Order
+        |> sortBy _.Position
 
-    ] |> Map
+    printfn "%A" markers
 
-let rec convert' ranges = function
+    let rec cut v start result markers =
+
+        let s, v1 =
+            match markers with
+            | (m: Marker) :: _ ->
+                let s = m.Position
+                let rank = m.Rank
+                s, v + rank
+            | [] -> 0L, v
+
+        let changed = v1 <> v
+
+        let result =
+            match start with
+            | Some(s1) when changed -> Range(s1, s) :: result
+            | _ -> result
+
+        let start = if changed && v1 >= 2 then Some s else None
+
+        match markers with
+        | _ :: markers -> cut v1 start result markers
+        | [] -> result |> rev
+
+    let cutRanges = cut 0 None [] markers
+
+    [ for Range(s, e) in cutRanges do
+          match
+              mappings
+              |> List.tryFind (fun (Mapping(Range(s1, e1), offset)) -> s >= s1 && e <= e1)
+          with
+          | Some(Mapping(_, offset)) -> Range(s + offset, e + offset)
+          | _ -> Range(s, e) ]
+
+let rec convertAll ranges =
+    function
     | [] -> ranges
     | mapping :: mappings ->
-        let next = convertOnce' ranges mapping
-        convert' next mappings
+        let ranges = convert ranges mapping
+        convertAll ranges mappings
 
-convert' initialSeedRanges mappings
-
-convertOnce' initialSeedRanges mappings[0]
+convertAll initialRanges mappings |> List.min

@@ -8,42 +8,41 @@ let input = System.IO.File.ReadAllLines "5.txt" |> toList
 let intList s =
     s |> String.split [ " " ] |> Seq.map int64 |> toList
 
-let seeds = input[0] |> sscanf "seeds: %s" |> intList
+module PartOne = 
 
-type Mapping' =
-    { Dest: int64
-      Source: int64
-      Length: int64 }
+    let seeds = input[0] |> sscanf "seeds: %s" |> intList
 
-    member r.Contains x =
-        x >= r.Source && x < r.Source + r.Length
+    type Mapping' =
+        { Dest: int64
+          Source: int64
+          Length: int64 }
 
-    member r.Convert x = r.Dest + x - r.Source
+        member r.Contains x =
+            x >= r.Source && x < r.Source + r.Length
 
+        member r.Convert x = r.Dest + x - r.Source
 
-let maps =
-    [ for groups in input |> skip 2 |> split [ [ "" ] ] do
-          [ for line in groups |> skip 1 do
-                let d, s, l = sscanf "%d %d %d" line
-                { Dest = d; Source = s; Length = l } ] ]
+    let maps =
+        [ for groups in input |> skip 2 |> split [ [ "" ] ] do
+              [ for line in groups |> skip 1 do
+                    let d, s, l = sscanf "%d %d %d" line
+                    { Dest = d; Source = s; Length = l } ] ]
 
-let convertSeed (ranges: Mapping' list) x =
-    match ranges |> List.tryFind (fun r -> r.Contains x) with
-    | Some r -> r.Convert x
-    | _ -> x
+    let convertSeed (ranges: Mapping' list) x =
+        match ranges |> List.tryFind (fun r -> r.Contains x) with
+        | Some r -> r.Convert x
+        | _ -> x
 
-let convertOnce' seeds ranges = seeds |> List.map (convertSeed ranges)
+    let convertOnce seeds ranges = seeds |> List.map (convertSeed ranges)
 
-let rec convert' seeds =
-    function
-    | [] -> seeds
-    | ranges :: maps ->
-        let seeds = convertOnce' seeds ranges
-        convert' seeds maps
+    let rec convert seeds =
+        function
+        | [] -> seeds
+        | ranges :: maps ->
+            let seeds = convertOnce seeds ranges
+            convert seeds maps
 
-let partOne = convert' seeds maps |> List.min
-
-
+    let partOne = convert seeds maps |> List.min
 
 
 type Range = Range of start: int64 * stop: int64

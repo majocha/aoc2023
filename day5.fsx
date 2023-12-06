@@ -149,4 +149,4 @@ let rec convertAll ranges =
         let ranges = convert ranges mapping
         convertAll ranges mappings
 
-convertAll initialRanges mappings |> List.min
+let partTwo = convertAll initialRanges mappings |> List.min

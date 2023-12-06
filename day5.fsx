@@ -80,15 +80,10 @@ type Marker =
 
     member m.Order =
         match m with
+        | StartOffset _ -> 0
         | Start _ -> 1
         | End _ -> 2
-        | StartOffset _ -> 0
         | EndOffset _ -> 3
-
-    member m.Offset =
-        match m with
-        | StartOffset(_, o) -> o
-        | _ -> 0L
 
 let rec parseSeedRanges result =
     function
@@ -142,9 +137,7 @@ let convert ranges mappings =
 
             cut v1 start offset result markers
 
-    let cutRanges = cut 0 None 0L [] markers
-
-    cutRanges
+    cut 0 None 0L [] markers
 
 let rec convertAll ranges =
     function

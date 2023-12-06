@@ -115,15 +115,14 @@ let convert ranges mappings =
         | [] -> result |> rev
         | (m: Marker) :: markers ->
             let currentPosition = m.Position
-            let v1 = m.Rank + v
-            let changed = v1 <> v
+            let v = m.Rank + v
 
             let result =
                 match start with
-                | Some startPosition when changed -> Range(startPosition + offset, currentPosition + offset) :: result
+                | Some startPosition -> Range(startPosition + offset, currentPosition + offset) :: result
                 | _ -> result
 
-            let start = if changed && v1 >= 2 then Some currentPosition else None
+            let start = if v >= 2 then Some currentPosition else None
 
             let offset =
                 match m with
@@ -131,7 +130,7 @@ let convert ranges mappings =
                 | EndOffset _ -> 0L
                 | _ -> offset
 
-            cut v1 start offset result markers
+            cut v start offset result markers
 
     cut 0 None 0L [] markers
 

@@ -3,12 +3,20 @@
 
 open FSharpPlus
 
+let input = System.IO.File.ReadAllLines "5.txt" |> toList
+
+let splitByEmptyLine lines =
+    let rec split acc result lines =
+        match lines with
+        | [] -> ((acc |> rev) :: result) |> rev
+        | "" :: lines -> split [] ((acc |> rev) :: result) lines
+        | line :: lines -> split (line :: acc) result lines
+    split [] [] lines
+
+let intList s =
+    s |> String.split [ " " ] |> Seq.map int64 |> toList
+
 module PartOne =
-
-    let input = System.IO.File.ReadAllLines "5.txt" |> toList
-
-    let intList s =
-        s |> String.split [ " " ] |> Seq.map int64 |> toList
 
     let seeds = input[0] |> sscanf "seeds: %s" |> intList
 
@@ -23,7 +31,7 @@ module PartOne =
         member r.Convert x = r.Dest + x - r.Source
 
     let maps =
-        [ for groups in input |> skip 2 |> split [ [ "" ] ] do
+        [ for groups in input |> skip 2 |> splitByEmptyLine do
               [ for line in groups |> skip 1 do
                     let d, s, l = sscanf "%d %d %d" line
                     { Dest = d; Source = s; Length = l } ] ]
@@ -81,11 +89,6 @@ type Marker =
         | StartOffset(_, o) -> o
         | _ -> 0L
 
-let input = System.IO.File.ReadAllLines "5.txt" |> toList
-
-let intList s =
-    s |> String.split [ " " ] |> Seq.map int64 |> toList
-
 let rec parseSeedRanges result =
     function
     | s :: l :: rest -> parseSeedRanges (Range(s, s + l - 1L) :: result) rest
@@ -95,7 +98,7 @@ let rec parseSeedRanges result =
 let initialRanges = parseSeedRanges [] (input[0] |> sscanf "seeds: %s" |> intList)
 
 let mappings: Mapping list list =
-    [ for groups in input |> skip 2 |> split [ [ "" ] ] do
+    [ for groups in input |> skip 2 |> splitByEmptyLine do
           [ for line in groups |> skip 1 do
                 let d, s, l = sscanf "%d %d %d" line
                 Mapping(Range(s, s + l - 1L), d - s) ] ]
@@ -113,6 +116,7 @@ let convert ranges mappings =
 
     let rec cut v start result =
         function
+        | [] -> result |> rev
         | (m: Marker) :: markers ->
             let currentPosition = m.Position
             let v1 = m.Rank + v
@@ -126,7 +130,6 @@ let convert ranges mappings =
             let start = if changed && v1 >= 2 then Some currentPosition else None
 
             cut v1 start result markers
-        | [] -> result |> rev
 
     let cutRanges = cut 0 None [] markers
 

@@ -113,6 +113,7 @@ let convert ranges mappings =
 
     let rec cut v start result =
         function
+        | [] -> result |> rev
         | (m: Marker) :: markers ->
             let currentPosition = m.Position
             let v1 = m.Rank + v
@@ -126,7 +127,6 @@ let convert ranges mappings =
             let start = if changed && v1 >= 2 then Some currentPosition else None
 
             cut v1 start result markers
-        | [] -> result |> rev
 
     let cutRanges = cut 0 None [] markers
 

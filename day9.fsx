@@ -17,7 +17,7 @@ let predict line =
         let lastVs = (lastV :: lastVs)
 
         if line |> List.forall ((=) 0) then
-            lastVs |> List.reduce ((+))
+            lastVs |> List.reduce (+)
         else
             let line = diff line
             predict' lastVs line

@@ -23,7 +23,7 @@ let dim =
     | Col -> snd
 
 let isLineEmpty =
-    fun d n -> galaxies |> filter (fun g -> g |> dim d = n) = []
+    fun d n -> galaxies |> exists (fun g -> g |> dim d = n) |> not
     |> memoizeN
 
 let distance' e g1 g2 d =

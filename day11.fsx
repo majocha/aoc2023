@@ -28,15 +28,9 @@ let isLineEmpty =
 
 let distance' g1 g2 d =
     let s1, s2 = dim d g1, dim d g2
-    let s = abs (s2 - s1)
-
-    if s = 0 then
-        0L
-    else
-        let emptyLines =
-            [ s1 .. sign (s2 - s1) .. s2 ] |> List.filter (isLineEmpty d) |> length
-
-        int64 (999_999 * emptyLines + s)
+    let s1, s2 = min s1 s2, max s1 s2
+    let emptyLines = [ s1..s2 ] |> List.filter (isLineEmpty d) |> length
+    int64 (999_999 * emptyLines + s2 - s1)
 
 let distance (g1, g2) =
     distance' g1 g2 Row + distance' g1 g2 Col

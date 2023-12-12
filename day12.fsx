@@ -40,9 +40,7 @@ let rec countMatches: int list -> char list -> int64 =
         let dots = patLen - (gs |> List.sum)
 
         match gs with
-        | [] ->
-            1L
-
+        | [] -> 1L
         | [ g ] ->
             [ for i in 0..dots do
                   let padRight = (dots - i)
@@ -51,8 +49,6 @@ let rec countMatches: int list -> char list -> int64 =
                   | Group i padRight g [] -> 1L
                   | _ -> 0L ]
             |> List.sum
-
-
         | g :: grest ->
             [ for i in 0..dots do
                   match pat with

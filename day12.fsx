@@ -34,31 +34,33 @@ let (|Group|_|) padLeft padRight hashes =
     | Dot padLeft (Hash hashes (Dot padRight rest)) -> Some rest
     | _ -> None
 
-let rec countMatches gs pat =
-    let patLen = pat |> Seq.length
-    let dots = patLen - (gs |> List.sum)
+let rec countMatches: int list -> char list -> int64 =
+    fun gs pat ->
+        let patLen = pat |> Seq.length
+        let dots = patLen - (gs |> List.sum)
 
-    match gs with
-    | [] ->
-        printfn "%s" (pat |> String.ofList)
-        1
+        match gs with
+        | [] ->
+            printfn "%s" (pat |> String.ofList)
+            1L
 
-    | [ g ] ->
-        [ for i in 0..dots do
-              let padRight = (dots - i)
+        | [ g ] ->
+            [ for i in 0..dots do
+                  let padRight = (dots - i)
 
-              match pat with
-              | Group i padRight g [] -> 1
-              | _ -> 0 ]
-        |> List.sum
+                  match pat with
+                  | Group i padRight g [] -> 1L
+                  | _ -> 0L ]
+            |> List.sum
 
 
-    | g :: grest ->
-        [ for i in 0..dots do
-              match pat with
-              | Group i 1 g rest -> countMatches grest rest
-              | _ -> 0 ]
-        |> List.sum
+        | g :: grest ->
+            [ for i in 0..dots do
+                  match pat with
+                  | Group i 1 g rest -> countMatches grest rest
+                  | _ -> 0L ]
+            |> List.sum
+    |> memoizeN
 
 let countAll rep =
     [ for line in input do

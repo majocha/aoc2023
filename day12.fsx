@@ -41,7 +41,6 @@ let rec countMatches: int list -> char list -> int64 =
 
         match gs with
         | [] ->
-            printfn "%s" (pat |> String.ofList)
             1L
 
         | [ g ] ->

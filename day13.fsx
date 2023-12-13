@@ -7,20 +7,12 @@ let input = System.IO.File.ReadAllLines("13.txt")
 
 let pats =
     let folder (acc, lines) line =
-        if line = "" then
-            ((lines |> List.rev) :: acc, [])
-        else
-            (acc, line :: lines)
+        match line |> Seq.toList with
+        | [] -> ((lines |> List.rev) :: acc, [])
+        | line -> acc, line :: lines
 
     let result, last = input |> Seq.fold folder ([], [])
     ((last |> List.rev) :: result) |> List.rev
-
-
-let getColumn n (pat: string list) =
-    [ for i in 0 .. (pat |> List.length) - 1 -> pat[i][n] ] |> String.ofSeq
-
-let rotate pat =
-    [ for i in 0 .. (pat |> List.head |> String.length) - 1 -> getColumn i pat ]
 
 let diffByOneChar a b =
     let rec check d a b =
@@ -30,9 +22,9 @@ let diffByOneChar a b =
         | _ :: a, _ :: b -> check d a b
         | _ -> false
 
-    check false (a |> List.ofSeq) (b |> List.ofSeq)
+    check false a b
 
-let isReflection (pat: string list) n =
+let isReflection part pat n =
     let rec check fixUsed =
         function
         | [], _
@@ -41,13 +33,16 @@ let isReflection (pat: string list) n =
         | h1 :: m1, h2 :: m2 when not fixUsed && diffByOneChar h1 h2 -> check true (m1, m2)
         | _ -> false
 
-    check false (pat[0..n] |> List.rev, pat[n + 1 ..])
+    check (part = 1) (pat |> List.take n |> List.rev, pat |> List.skip n)
 
-let findReflection pat =
-    match [ 0 .. (pat |> List.length) - 1 ] |> List.tryFind (isReflection pat) with
-    | Some n -> n + 1
+let findReflection part pat =
+    match [ 1 .. (pat |> List.length) - 1 ] |> List.tryFind (isReflection part pat) with
+    | Some n -> n
     | _ -> 0
 
-let partTwo =
-    [ for p in pats -> 100 * (findReflection p) + (p |> rotate |> findReflection) ]
+let result part =
+    [ for p in pats -> 100 * (findReflection part p) + (p |> List.transpose |> findReflection part) ]
     |> List.sum
+
+let partOne = result 1
+let partTwo = result 2

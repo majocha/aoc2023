@@ -1,8 +1,4 @@
 #time "on"
-#r "nuget: FSharpPlus"
-
-open FSharpPlus
-
 let input = System.IO.File.ReadAllLines("13.txt")
 
 let pats =

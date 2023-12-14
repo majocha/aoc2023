@@ -51,8 +51,8 @@ let loads =
     [1 .. 1000] |> List.scan cycle initial |> List.map totalLoad
 
 let isRepeating ls fragment =
-    let repeat = [ for i in 1..10 -> fragment ] |> List.concat
-    ls |> List.take repeat.Length = repeat
+    let repeated = [ for i in 1..10 do yield! fragment ]
+    ls |> List.take repeated.Length = repeated
 
 let findRepeat ls =
     let reversed = ls |> List.rev

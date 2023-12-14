@@ -34,7 +34,7 @@ let south platform =
 let east platform =
     platform |> List.map (List.rev >> slideRow >> List.rev)
 
-let readPlatform () =
+let initial =
     System.IO.File.ReadAllLines("14.txt") |> List.ofSeq |> List.map List.ofSeq
 
 let totalLoad platform =
@@ -44,23 +44,11 @@ let totalLoad platform =
 
     platform |> List.rev |> List.indexed |> List.map sumRow |> List.sum
 
-let cycle platform =
+let cycle platform _ =
     platform |> north |> west |> south |> east
 
-let rec cycleN n platform =
-    printfn "%d" (totalLoad platform)
-    if n = 0 then platform else cycleN (n - 1) (cycle platform)
-
-let loadSeq =
-    seq {
-        let mutable platform = readPlatform ()
-
-        while true do
-            platform <- cycle platform
-            totalLoad platform
-    }
-
-let thousandLoads = loadSeq |> Seq.take 1000 |> Seq.toList
+let loads =
+    [1 .. 1000] |> List.scan cycle initial |> List.map totalLoad
 
 let isRepeating ls fragment =
     let repeat = [ for i in 1..10 -> fragment ] |> List.concat
@@ -80,8 +68,8 @@ let findRepeat ls =
 
     from, cycleLength
 
-let partOne = readPlatform () |> north |> totalLoad
+let partOne = initial |> north |> totalLoad
 
 let partTwo =
-    let from, cycleLength = findRepeat thousandLoads
-    thousandLoads[(1000000000 - from) % cycleLength + from - 1]
+    let from, cycleLength = findRepeat loads
+    loads[(1000000000 - from) % cycleLength + from - 1]

@@ -1,5 +1,9 @@
 #time "on"
 
+#r "nuget: FSharpPlus"
+
+open FSharpPlus
+
 let toChunks row =
     let rec chunk acc =
         function
@@ -44,8 +48,9 @@ let totalLoad platform =
 
     platform |> List.rev |> List.indexed |> List.map sumRow |> List.sum
 
-let cycle platform _ =
-    platform |> north |> west |> south |> east
+let cycle =
+    fun p _ -> p |> north |> west |> south |> east
+    |> memoizeN
 
 let loads =
     [1 .. 1000] |> List.scan cycle initial |> List.map totalLoad
@@ -58,12 +63,12 @@ let findRepeat ls =
     let reversed = ls |> List.rev
 
     let cycleLength =
-        [ 1..1000 ] |> List.find (fun n -> reversed |> List.take n |> isRepeating reversed)
+        [ 1..200 ] |> List.find (fun n -> reversed |> List.take n |> isRepeating reversed)
 
     let cycle = reversed |> List.take cycleLength |> List.rev
 
     let from =
-        [ 1..500 ]
+        [ 0..200 ]
         |> List.find (fun n -> ls |> List.skip n |> List.take cycleLength = cycle)
 
     from, cycleLength
@@ -72,4 +77,5 @@ let partOne = initial |> north |> totalLoad
 
 let partTwo =
     let from, cycleLength = findRepeat loads
-    loads[(1000000000 - from) % cycleLength + from - 1]
+    loads[(1000000000 - from) % cycleLength + from]
+

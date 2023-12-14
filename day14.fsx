@@ -49,11 +49,11 @@ let totalLoad platform =
     platform |> List.rev |> List.indexed |> List.map sumRow |> List.sum
 
 let cycle =
-    fun p _ -> p |> north |> west |> south |> east
+    fun p -> p |> north |> west |> south |> east
     |> memoizeN
 
 let loads =
-    [1 .. 1000] |> List.scan cycle initial |> List.map totalLoad
+    [1 .. 1000] |> List.scan (fun p _ -> cycle p) initial |> List.map totalLoad
 
 let isRepeating ls fragment =
     let repeated = [ for i in 1..10 do yield! fragment ]

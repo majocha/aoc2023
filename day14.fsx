@@ -1,9 +1,4 @@
 #time "on"
-
-#r "nuget: FSharpPlus"
-
-open FSharpPlus
-
 let toChunks row =
     let rec chunk acc =
         function
@@ -48,12 +43,10 @@ let totalLoad platform =
 
     platform |> List.rev |> List.indexed |> List.map sumRow |> List.sum
 
-let cycle =
-    fun p -> p |> north |> west |> south |> east
-    |> memoizeN
+let cycle p _ =  p |> north |> west |> south |> east
 
 let loads =
-    [1 .. 1000] |> List.scan (fun p _ -> cycle p) initial |> List.map totalLoad
+    [1 .. 1000] |> List.scan cycle initial |> List.map totalLoad
 
 let isRepeating ls fragment =
     let repeated = [ for i in 1..10 do yield! fragment ]

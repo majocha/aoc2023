@@ -1,4 +1,5 @@
 #time "on"
+
 let toChunks row =
     let rec chunk acc =
         function
@@ -43,20 +44,23 @@ let totalLoad platform =
 
     platform |> List.rev |> List.indexed |> List.map sumRow |> List.sum
 
-let cycle p _ =  p |> north |> west |> south |> east
+let cycle p _ = p |> north |> west |> south |> east
 
-let loads =
-    [1 .. 1000] |> List.scan cycle initial |> List.map totalLoad
+let loads = [ 1..1000 ] |> List.scan cycle initial |> List.map totalLoad
 
 let isRepeating ls fragment =
-    let repeated = [ for i in 1..10 do yield! fragment ]
+    let repeated =
+        [ for i in 1..10 do
+              yield! fragment ]
+
     ls |> List.take repeated.Length = repeated
 
 let findRepeat ls =
     let reversed = ls |> List.rev
 
     let cycleLength =
-        [ 1..200 ] |> List.find (fun n -> reversed |> List.take n |> isRepeating reversed)
+        [ 1..200 ]
+        |> List.find (fun n -> reversed |> List.take n |> isRepeating reversed)
 
     let cycle = reversed |> List.take cycleLength |> List.rev
 
@@ -71,4 +75,3 @@ let partOne = initial |> north |> totalLoad
 let partTwo =
     let from, cycleLength = findRepeat loads
     loads[(1000000000 - from) % cycleLength + from]
-

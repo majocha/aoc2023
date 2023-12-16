@@ -20,82 +20,70 @@ let input = System.IO.File.ReadAllLines "16.txt"
 let grid = input |> Seq.toList |> List.map List.ofSeq
 let bounds = grid.Length - 1
 
-let (|Inside|_|) (x, y) =
-    if x < 0 || x > bounds || y < 0 || y > bounds then
-        None
-    else
-        Some(x, y)
+let nextFeature start =
+    let rec nextFeature' ps (p, dir) =
+        let x, y = move p dir
 
-let getTile =
-    function
-    | Inside(x, y) -> Some(grid[y][x])
-    | _ -> None
+        if x < 0 || x > bounds || y < 0 || y > bounds then
+            ps, []
+        else
+            let ps = (x, y) :: ps
 
-let (|Reflect|_|) dir c =
-    match c with
-    | Some '\\' ->
-        (dir
-         |> function
-             | Left -> Up
-             | Right -> Down
-             | Up -> Left
-             | Down -> Right)
-        |> List.singleton
-        |> Some
-    | Some '/' ->
-        (dir
-         |> function
-             | Right -> Up
-             | Left -> Down
-             | Up -> Right
-             | Down -> Left)
-        |> List.singleton
-        |> Some
-    | _ -> None
+            match grid[y][x] with
+            | '\\' ->
+                ps,
+                (dir
+                 |> function
+                     | Left -> Up
+                     | Right -> Down
+                     | Up -> Left
+                     | Down -> Right)
+                |> List.singleton
+            | '/' ->
+                ps,
+                (dir
+                 |> function
+                     | Right -> Up
+                     | Left -> Down
+                     | Up -> Right
+                     | Down -> Left)
+                |> List.singleton
+            | '|' when dir = Left || dir = Right -> ps, [ Up; Down ]
+            | '-' when dir = Up || dir = Down -> ps, [ Left; Right ]
+            | '|'
+            | '-' -> ps, [ dir ]
+            | _ -> nextFeature' ps ((x, y), dir)
 
-let (|Split|_|) dir c =
-    match c with
-    | Some '|' ->
-        (dir
-         |> function
-             | Left
-             | Right -> [ Up; Down ]
-             | d -> [ d ])
-        |> Some
-    | Some '-' ->
-        (dir
-         |> function
-             | Up
-             | Down -> [ Left; Right ]
-             | d -> [ d ])
-        |> Some
-    | _ -> None
+    let m = nextFeature' |> memoizeN
+    m [] start
 
-let step from dir =
-    let next = move from dir
+let allBeams start =
+    let rec loop prevStarts visited starts =
+        let fragments =
+            [ for start in starts - prevStarts do
+                  let ps, ds = nextFeature start
 
-    match next |> getTile with
-    | Reflect dir dirs -> [ for d in dirs -> next, d ]
-    | Split dir dirs -> [ for d in dirs -> next, d ]
-    | Some _ -> [ next, dir ]
-    | _ -> []
+                  let starts =
+                      match ps with
+                      | from :: _ -> [ for d in ds -> from, d ]
+                      | _ -> []
 
-let rec step' acc prev =
-    if prev |> Set.isEmpty then
-        acc
-    else
-        let next =
-            [ for from, dir in prev do
-                  yield! step from dir ]
-            |> Set
+                  ps, starts ]
 
-        step' (acc + next) (next - acc)
+        let prevStarts = starts + prevStarts
+        let visited = visited + (fragments |> Seq.collect fst |> Set.ofSeq)
+        let starts = fragments |> Seq.collect snd |> Set
 
-let energy from dir =
-    let initial = step from dir |> Set
-    step' initial initial |> Set.map fst |> Set.count
+        if starts.IsEmpty then
+            visited
+        else
+            loop prevStarts visited starts
 
-let partOne = energy (-1, 0) Right
+    loop Set.empty Set.empty (Set.singleton start)
+
+let energy start = allBeams start |> Set.count
+
+let partOne = energy ((-1, 0), Right)
 
 let allStarting =
     let edge = [ 0 .. bounds - 1 ]
@@ -106,7 +94,4 @@ let allStarting =
            (-1, i), Right
            (bounds, i), Left |]
 
-let partTwo =
-    allStarting
-    |> Array.Parallel.map (fun (from, dir) -> energy from dir)
-    |> Array.Parallel.max
+let partTwo = allStarting |> Array.Parallel.map energy |> Array.Parallel.max

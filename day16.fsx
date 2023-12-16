@@ -1,7 +1,4 @@
 #time "on"
-#r "nuget: FSharpPlus"
-
-open FSharpPlus
 
 type Dir =
     | Up
@@ -53,9 +50,7 @@ let nextFeature start =
             | '|'
             | '-' -> ps, [ dir ]
             | _ -> nextFeature' ps ((x, y), dir)
-
-    let m = nextFeature' |> memoizeN
-    m [] start
+    nextFeature' [] start
 
 let allBeams start =
     let rec loop prevStarts visited starts =

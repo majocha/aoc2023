@@ -50,6 +50,7 @@ let nextFeature start =
             | '|'
             | '-' -> ps, [ dir ]
             | _ -> nextFeature' ps ((x, y), dir)
+
     nextFeature' [] start
 
 let allBeams start =

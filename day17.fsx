@@ -7,6 +7,8 @@ let grid =
 
 let gridSize = grid.Length
 
+let finalPos = gridSize - 1, gridSize - 1
+
 type Dir =
     | Up
     | Down
@@ -24,7 +26,7 @@ type Node =
       Direction: Dir
       Steps: int }
 
-let getWeight (x, y) = grid[x][y]
+let getLoss (x, y) = grid[x][y]
 
 let turn dir turnDir =
     let dirs = [ Up; Right; Down; Left ]
@@ -67,48 +69,42 @@ let nextNodes maxSteps stepsToTurn (node: Node) =
                 Steps = if d <> node.Direction then 1 else node.Steps + 1 }
           | _ -> () ]
 
-let rec path nextNodes visited boundary =
-    let updates =
-        [ for node in boundary do
-              let loss = visited |> Map.tryFind node |> Option.defaultValue 0
+let rec path nextNodes endCondition visited boundary best =
+    let nextBest =
+        boundary
+        |> List.fold (fun b (n, s) -> if endCondition n then min s b else b) best
 
-              for next in nextNodes node do
-                  let w = getWeight next.Position
-                  let nextLoss = loss + w
+    let nextBoundary =
+        [ for from, currentLoss in boundary do
+              for node in nextNodes from do
+                  let oldLoss = visited |> Map.tryFind node |> Option.defaultValue nextBest
+                  let nextLoss = currentLoss + getLoss node.Position
 
-                  match visited.TryFind next with
-                  | None -> next, nextLoss
-                  | Some l when nextLoss < l -> next, nextLoss
-                  | _ -> () ]
+                  if oldLoss > nextLoss then
+                      node, nextLoss ]
         |> List.groupBy fst
         |> List.map (snd >> List.minBy snd)
 
-    let visited =
-        updates |> List.fold (fun visited (k, v) -> visited |> Map.add k v) visited
+    let nextVisited =
+        nextBoundary |> List.fold (fun visited (k, v) -> visited |> Map.add k v) visited
 
-    let boundary = updates |> List.map fst
-
-    if boundary = [] then
-        visited
+    if nextBoundary.IsEmpty then
+        nextBest
     else
-        path nextNodes visited boundary
+        path nextNodes endCondition nextVisited nextBoundary nextBest
 
 let initial =
     [ { Position = (0, 0)
         Direction = Down
-        Steps = 1 }
+        Steps = 1 },
+      0
       { Position = (0, 0)
         Direction = Right
-        Steps = 1 } ]
+        Steps = 1 },
+      0 ]
 
 let partOne =
-    path (nextNodes 3 0) Map.empty initial
-    |> Map.filter (fun k _ -> k.Position = (gridSize - 1, gridSize - 1))
-    |> Map.values
-    |> Seq.min
+    path (nextNodes 3 0) (fun n -> n.Position = finalPos) Map.empty initial 9999
 
 let partTwo =
-    path (nextNodes 10 4) Map.empty initial
-    |> Map.filter (fun k _ -> k.Position = (gridSize - 1, gridSize - 1) && k.Steps >= 4)
-    |> Map.values
-    |> Seq.min
+    path (nextNodes 10 4) (fun n -> n.Position = finalPos && n.Steps >= 4) Map.empty initial 9999

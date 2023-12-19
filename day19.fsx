@@ -79,27 +79,15 @@ module PartOne =
 
 let filterByCondition = function Gt d -> (<) d | Lt d -> (>) d
 
-
-
-let possible = [X; M; A; S] |> List.map( fun c -> c, Set [1 .. 4000]) |> Map
-
-let printMap m = m |> Map.values |> Seq.map (Set.count >> string) |> String.concat ", "
+let combinations m = m |> Map.map (fun _ s -> s |> Set.count |> int64) |> Map.values |> Seq.reduce ((*))
 
 let rec acceptedFromWorkflow from w allowed =
-    printfn $"\nworkflow {w} from {from}"
-    //for c in possible |> Map.keys do printfn $"{c}: {possible[c] |> Set.count}"
-    if allowed |> Map.values |> Seq.exists Set.isEmpty then
-        None |> tap (printfn "%A")
+    if allowed |> Map.values |> Seq.exists Set.isEmpty then 0L
     else
     match w with
-    | "A" ->
-        printfn $" Accepted: { printMap allowed}"
-        (Some allowed)
-    | "R" ->
-        printfn $" Rejected: { printMap allowed}"
-        None
+    | "A" -> combinations allowed
+    | "R" -> 0L
     | w ->
-        printfn $"Testing: {printMap allowed}"
         let (Workflow( rules, next)) = workflows[w]
         let results, last =
             rules |> List.mapFold(fun p r ->
@@ -108,24 +96,11 @@ let rec acceptedFromWorkflow from w allowed =
                 let rest = p |> Map.map (fun k v -> if k = r.Category then v |> Set.filter (filterByCondition r.Condition >> not) else v)
                 filtered |> acceptedFromWorkflow w r.Next, rest)
                 allowed
-        let results = (acceptedFromWorkflow w next last) :: results |> List.choose id
-        if results.IsEmpty then None else
-            results |> List.reduce (fun p1 p2 -> p1 |> Map.map (fun k s -> s + p2[k]) ) |> Some
+        let results = (acceptedFromWorkflow w next last) :: results
+        results |> sum
 
-let countCombinations possible =
-    match acceptedFromWorkflow "" "in" possible with
-    | Some ps -> ps |> Map.map (fun _ s -> s.Count |> int64) |> Map.values |> Seq.reduce ((*))
-    | _ -> 0L
+let countCombinations = acceptedFromWorkflow "" "in"
 
-let fromParts =
-    [ for p in parts do
-        [
-            X, p.X; M, p.M; A, p.A; S, p.S
-        ] |> Map |> Map.map (fun _ v -> Set.singleton v)
-    ]
+let possible = [X; M; A; S] |> List.map( fun c -> c, Set [1 .. 4000]) |> Map
 
-fromParts |> List.map countCombinations
-
-countCombinations possible
-
-countCombinations fromParts[1]
+let partTwo =countCombinations possible

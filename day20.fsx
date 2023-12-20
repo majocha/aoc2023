@@ -29,7 +29,7 @@ let broadcaster send n dests = function (Pulse(_, q)) -> Pulse(n, q) |> send des
 
 let flipflop send n dests =
     let mutable state = false
-    function Pulse(_, false) -> state <- not state; Pulse(n, state) |> send dests | _ -> ()
+    function Pulse(_, false) -> state <- not state; Pulse(n, state) |> send dests | _ -> id
 
 let conjunction send n dests inps =
     let mutable received = inps |> List.map (fun n -> n, false) |> Map
@@ -45,30 +45,29 @@ let makeModule send (n, dests: string list) =
     | FlipFlop -> k, flipflop send  k dests
     | Conjunction -> k, getInputs k |> conjunction send k dests 
 
-let agent = MailboxProcessor.Start( fun inbox ->
-    let send dests (Pulse(sender, q) as p) =
-        for d in dests do
-            inbox.Post(d, p)
+let push n =
 
+    let send dests (Pulse(sender, q) as p) queue =
+        queue @ [ for d in dests -> d, p ]
+    
     let modules = configuration |> List.map (makeModule send) |> Map
+    
+    let rec processQueue low high =
+        function
+        | [] -> low, high
+        | (dest, (Pulse(n, q) as p)) :: queue ->
+            let v = if q then "-high" else "-low"
+            printfn $"{n} {v}-> {dest}"
+            let high, low = if q then high + 1, low else high, low + 1
+            let queue =
+                if dest = "output" then queue
+                else
+                    modules[dest] p queue
+            processQueue high low queue
 
-    let rec loop high low = async {
-        let! dest, (Pulse(n, q) as p) = inbox.Receive()
-        let v = if q then "-high" else "-low"
-        printfn $"{n} {v}-> {dest}"
 
-        let high, low = if q then high + 1, low else high, low + 1
-        //rc.Reply(high, low)
-        if dest <> "output" then modules[dest] p
-        return! loop high low
-    }
-    loop 0 0
-)
+    [1 .. n] |> List.fold (fun (h, l) _ -> processQueue h l [ "broadcaster", Pulse("button", false) ] ) (0, 0)
 
-let pushButton() =
-    agent.Post("broadcaster", Pulse("button", false) )
-
-pushButton ()
-//[for i in  1 .. 1000 ->    pushButton() ] |> List.last
+push 1
 
 

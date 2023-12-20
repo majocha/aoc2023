@@ -79,7 +79,7 @@ module PartOne =
         parts |> List.filter isAccepted |> List.sumBy (fun p -> p.Values |> Seq.sum)
 
 
-let filterByCondition k =
+let applyRule k =
     function
     | Gt(c, d, _) when c = k -> (<) d
     | Lt(c, d, _) when c = k -> (>) d
@@ -102,8 +102,8 @@ let rec acceptedFromWorkflow ratings =
                 match r with
                 | Gt(c, d, w)
                 | Lt(c, d, w) ->
-                    let filtered = p |> Map.add c (p[c] |> Set.filter (filterByCondition c r))
-                    let rest = p |> Map.add c (p[c] |> Set.filter (filterByCondition c r >> not))
+                    let filtered = p |> Map.add c (p[c] |> Set.filter (applyRule c r))
+                    let rest = p |> Map.add c (p[c] |> Set.filter (applyRule c r >> not))
                     rest, count + acceptedFromWorkflow filtered w
                 | Next w -> p, count + acceptedFromWorkflow p w)
             (ratings, 0L)

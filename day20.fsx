@@ -56,18 +56,19 @@ let push n =
         function
         | [] -> low, high
         | (dest, (Pulse(n, q) as p)) :: queue ->
-            let v = if q then "-high" else "-low"
-            printfn $"{n} {v}-> {dest}"
-            let high, low = if q then high + 1, low else high, low + 1
+            let low, high = if q then low, high + 1 else low + 1, high
+            //let v = if q then "-high" else "-low"
+            //printfn $"{n} {v}-> {dest}"
             let queue =
-                if dest = "output" then queue
+                if modules.ContainsKey dest then modules[dest] p queue
                 else
-                    modules[dest] p queue
-            processQueue high low queue
+                    queue
+            processQueue low high queue
 
 
-    [1 .. n] |> List.fold (fun (h, l) _ -> processQueue h l [ "broadcaster", Pulse("button", false) ] ) (0, 0)
+    let l, h = [1 .. n] |> List.fold (fun (h, l) _ -> processQueue h l [ "broadcaster", Pulse("button", false) ] ) (0, 0)
+    l * h
 
-push 1
+push 1000
 
 

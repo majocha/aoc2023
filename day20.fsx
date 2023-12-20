@@ -24,7 +24,6 @@ let getInputs n =
     configuration |> List.filter (fun (m, cs) -> cs |> Seq.contains n ) |> List.map (fst >> getName)
 
 type Pulse = Pulse of sender: string * bool
-type Msg = string list * Pulse
 
 let broadcaster send n dests = function (Pulse(_, q)) -> Pulse(n, q) |> send dests
 
@@ -49,25 +48,27 @@ let makeModule send (n, dests: string list) =
 let agent = MailboxProcessor.Start( fun inbox ->
     let send dests (Pulse(sender, q) as p) =
         for d in dests do
-            let v = if q then "-high" else "-low"
-            printfn $"{sender} {v}-> {d}"
-            inbox.Post(d, p)
+            let high, low = inbox.PostAndReply(fun rc -> d, p, rc)
+            printfn $"{high} {low}"
 
     let modules = configuration |> List.map (makeModule send) |> Map
 
     let rec loop high low = async {
-        let! dest, (Pulse(n, q) as p) = inbox.Receive()
-        //printfn $"received {p}"
+        let! dest, (Pulse(n, q) as p), rc = inbox.Receive()
+        //let v = if q then "-high" else "-low"
+        //printfn $"{n} {v}-> {dest}"
+
         let high, low = if q then high + 1, low else high, low + 1
+        rc.Reply(high, low)
         if dest <> "output" then modules[dest] p
         return! loop high low
     }
-    Async.Sleep 0 |> Async.RunSynchronously
     loop 0 0
 )
 
-let pushButton() = agent.Post("broadcaster", Pulse("button", false))
-pushButton()
-for i in 1 .. 1000 do  pushButton()
+let pushButton() =
+    agent.PostAndReply(fun rc -> "broadcaster", Pulse("button", false), rc)
+
+[for i in  1 .. 1000 ->    pushButton() ] |> List.last
 
 

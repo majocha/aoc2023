@@ -48,18 +48,17 @@ let makeModule send (n, dests: string list) =
 let agent = MailboxProcessor.Start( fun inbox ->
     let send dests (Pulse(sender, q) as p) =
         for d in dests do
-            let high, low = inbox.PostAndReply(fun rc -> d, p, rc)
-            printfn $"{high} {low}"
+            inbox.Post(d, p)
 
     let modules = configuration |> List.map (makeModule send) |> Map
 
     let rec loop high low = async {
-        let! dest, (Pulse(n, q) as p), rc = inbox.Receive()
-        //let v = if q then "-high" else "-low"
-        //printfn $"{n} {v}-> {dest}"
+        let! dest, (Pulse(n, q) as p) = inbox.Receive()
+        let v = if q then "-high" else "-low"
+        printfn $"{n} {v}-> {dest}"
 
         let high, low = if q then high + 1, low else high, low + 1
-        rc.Reply(high, low)
+        //rc.Reply(high, low)
         if dest <> "output" then modules[dest] p
         return! loop high low
     }
@@ -67,8 +66,9 @@ let agent = MailboxProcessor.Start( fun inbox ->
 )
 
 let pushButton() =
-    agent.PostAndReply(fun rc -> "broadcaster", Pulse("button", false), rc)
+    agent.Post("broadcaster", Pulse("button", false) )
 
-[for i in  1 .. 1000 ->    pushButton() ] |> List.last
+pushButton ()
+//[for i in  1 .. 1000 ->    pushButton() ] |> List.last
 
 

@@ -4,10 +4,10 @@
 open FSharpPlus
 
 let input = System.IO.File.ReadAllLines "21.txt"
-let size = (input |> Seq.length) - 1
+let size = (input |> Seq.length)
 
 let start, map =
-    ( [ 0 .. size ], [0 .. size ] )
+    ( [ 0 .. size - 1 ], [0 .. size - 1 ] )
     ||> List.allPairs
     |> List.fold ( fun (s, m) (x, y) -> 
         match input[y][x] with
@@ -16,14 +16,26 @@ let start, map =
         | _ -> s, m )
         ((0,0), Set.empty)
 
-let from =
-    fun (x,y) -> Set [ x - 1, y; x + 1, y; x, y - 1; x, y + 1] |> Set.intersect map
-    |> memoizeN
+let neighbours (x, y) =
+    [
+        for p in  [ x - 1, y; x + 1, y; x, y - 1; x, y + 1] do
+            if map.Contains p then p ]
+            // if map.Contains ((size + x) % size, (size + y) % size) then x, y ]
 
-let rec walk' =
-    fun n p -> if n = 0 then Set.singleton p else from p |> Set.map (walk' (n - 1)) |> Set.unionMany
-    |> memoizeN
+let distances start =
+    let rec search n dist q =
+        match q with
+        | [] -> dist
+        | p :: rest ->
+            match dist |> Map.tryFind p |> Option.defaultValue 999 with
+            | d when n < d ->
+                search
+                    (n + 1)
+                    (dist |> Map.add p n)
+                    (q @ neighbours p)
+            | _ -> search n dist rest
+    search 0 Map.empty [ start ]
 
-let walk n = walk' n start
+let ds = distances start
 
-walk 64 |> Set.count
+

@@ -50,23 +50,33 @@ let supportMap stack =
 
     let rec loop supports supported =
         function
-        | [] -> gb supports, supported |> List.countBy id |> Map
+        | [] -> (gb supports), (gb supported)
         | (bi, b) :: above ->
             let supportedBy = above |> List.filter (snd >> isSupported b) |> List.map fst
 
             let supports, supported =
                 supportedBy
-                |> List.fold (fun (ba, ab) i -> (bi, i) :: ba, i :: ab) (supports, supported)
+                |> List.fold (fun (ba, ab) i -> (bi, i) :: ba, (i, bi) :: ab) (supports, supported)
 
             loop supports supported above
 
     stack |> List.indexed |> List.rev |> loop [] []
 
-let partOne =
-    let supports, supported = supportMap dropped
 
-    let canBeRemoved b =
-        not (supports.ContainsKey b)
-        || supports[b] |> List.forall (fun a -> supported[a] > 1)
+let supports, supported = supportMap dropped
+let canBeRemoved b =
+    not (supports.ContainsKey b)
+    || supports[b] |> List.forall (fun a -> supported[a] |> List.length > 1)
 
-    [ 0 .. dropped.Length - 1 ] |> Seq.filter canBeRemoved |> Seq.length
+let indexes = [ 0 .. dropped.Length - 1 ]
+
+let partOne = indexes |> List.filter canBeRemoved |> List.length
+
+let rec wouldFall fell b =
+    match supports |> Map.tryFind b with
+    | None -> fell
+    | Some above ->
+        let immidiately = above |> List.filter (fun a -> Set supported[a] - (fell |> Set.add b) |> Set.isEmpty)
+        immidiately |> List.fold wouldFall (Set immidiately + fell)
+
+let partTwo = indexes |> List.filter (canBeRemoved >> not) |> List.sumBy (wouldFall Set.empty >> Set.count)

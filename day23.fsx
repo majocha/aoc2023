@@ -25,13 +25,20 @@ let next (x,y) =
         |> Set
     Set.intersect moves tiles
 
-let rec longest steps visited moves =
+let finish = size - 2, size - 1
 
+let rec walk map =
+    function
+    | [] -> map
+    | ((pos :: _) as path) :: rest ->
+        let currentScore = map |> Map.tryFind pos |> Option.defaultValue 0
+        let score = path |> List.length
+        if currentScore < score then
+            [ for p in next pos do if path |> List.contains p |> not then p :: path ] @ rest
+            |> walk (map.Add(pos, score))
+        else
+            walk map rest
 
-    let ls = 
-        [ for p in next move - visited do
-            longest (steps + 1) (visited |> Set.add move) p
-        ]
-    match ls with | [] -> steps | ls -> ls |> List.max
-
-let partOne = longest 0 Set.empty (1, 0)
+let start = 1, 0
+let m = walk Map.empty [[start]]
+m[finish] - 1

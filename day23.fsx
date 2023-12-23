@@ -30,15 +30,15 @@ let finish = size - 2, size - 1
 let rec walk map =
     function
     | [] -> map
-    | ((pos :: _) as path) :: rest ->
-        let currentScore = map |> Map.tryFind pos |> Option.defaultValue 0
+    | (pos :: path) :: rest ->
+        let currentScore = map |> Map.tryFind pos |> Option.defaultValue -1
         let score = path |> List.length
         if currentScore < score then
-            [ for p in next pos do if path |> List.contains p |> not then p :: path ] @ rest
+            [ for m in next pos do if path |> List.contains m |> not then m :: pos :: path ] @ rest
             |> walk (map.Add(pos, score))
         else
             walk map rest
 
 let start = 1, 0
 let m = walk Map.empty [[start]]
-m[finish] - 1
+m[finish]

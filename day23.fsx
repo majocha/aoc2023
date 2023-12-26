@@ -57,13 +57,13 @@ let rec walkJunction next steps from prev map pos =
 let walkJunctions next =
     walkJunction next 1 start start (Map [ start, [] ]) start
 
-// Just try all paths favoring longer, takes about 10 - 15 seconds.
+// Just try all paths, takes about 10 - 15 seconds.
 let rec walk map js steps from =
     [ for j, (d: int) in
           map
           |> Map.find from
           |> List.filter (fun (j, _) -> js |> List.contains j |> not)
-          |> List.sortByDescending snd do
+          do
           let steps = steps + d
 
           if js |> List.contains j |> not then

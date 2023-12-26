@@ -64,6 +64,7 @@ let supportMap stack =
 
 
 let supports, supported = supportMap dropped
+
 let canBeRemoved b =
     not (supports.ContainsKey b)
     || supports[b] |> List.forall (fun a -> supported[a] |> List.length > 1)
@@ -76,7 +77,13 @@ let rec wouldFall fell b =
     match supports |> Map.tryFind b with
     | None -> fell
     | Some above ->
-        let immidiately = above |> List.filter (fun a -> Set supported[a] - (fell |> Set.add b) |> Set.isEmpty)
+        let immidiately =
+            above
+            |> List.filter (fun a -> Set supported[a] - (fell |> Set.add b) |> Set.isEmpty)
+
         immidiately |> List.fold wouldFall (Set immidiately + fell)
 
-let partTwo = indexes |> List.filter (canBeRemoved >> not) |> List.sumBy (wouldFall Set.empty >> Set.count)
+let partTwo =
+    indexes
+    |> List.filter (canBeRemoved >> not)
+    |> List.sumBy (wouldFall Set.empty >> Set.count)

@@ -56,6 +56,7 @@ module PartOne =
 
     let intersectsInside (s1, s2) =
         let l (p: Vector3, v) =
+            // scale down, because of float32 precision 
             let p = p / d
             p, p + v
 
@@ -98,4 +99,5 @@ let M =
                   .Append(crossMatrix p3 - crossMatrix p1)
                   .EnumerateRows() ]
 
-M.Solve b |> Seq.take 3 |> Seq.sum |> printfn "Part two: %.0f"
+let partOne = PartOne.partOne
+let partTwo = M.Solve b |> Seq.take 3 |> Seq.sum |> sprintf "%.0f"

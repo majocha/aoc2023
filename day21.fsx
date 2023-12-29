@@ -5,21 +5,21 @@ open FSharpPlus
 
 let input = System.IO.File.ReadAllLines "21.txt"
 let size = (input |> Seq.length)
-
-let start, map =
+let d = size / 2
+let start = 0, 0
+let map =
     ([ 0 .. size - 1 ], [ 0 .. size - 1 ])
     ||> List.allPairs
     |> List.fold
-        (fun (s, m) (x, y) ->
+        (fun m (x, y) ->
             match input[y][x] with
-            | '.' -> s, m |> Set.add (x, y)
-            | 'S' -> (x, y), m |> Set.add (x, y)
-            | _ -> s, m)
-        ((0, 0), Set.empty)
+            | '.' | 'S' -> m |> Set.add (x - d, y - d)
+            | _ -> m)
+        Set.empty
 
 let gp (x, y) =
     let wrap v =
-        if v % size < 0 then v % size + size else v % size
+        if (v + d) % size < 0 then (v + d) % size + size - d else (v + d) % size
 
     map.Contains(wrap x, wrap y)
 
@@ -43,6 +43,18 @@ let rec search stopCondition dist q =
 
 let fourGrid (x, y) =
     x < - 5 * size || y < - 5 * size || x > 4 * size - 1 || y > 4 * size - 1
+
+
+let printGrid charF d =
+    for y in -d .. d do
+        for x in -d .. d do
+            charF (x, y) |> printf "%c"
+        printfn ""
+
+
+printGrid (fun p -> if gp p then '.'  else '#') size
+
+
 
 let fromStart = search fourGrid (Map [ start, 0 ]) [ start ]
 

@@ -44,10 +44,8 @@ module PartOne =
 
         ((x.X < x1.X && v1.X < 0f) || (x.X > x1.X && v1.X > 0f))
         && ((x.X < x2.X && v2.X < 0f) || (x.X > x2.X && v2.X > 0f))
-        && x.X >= d1
-        && x.X <= d2
-        && x.Y >= d1
-        && x.Y <= d2
+        && x.X >= d1 && x.X <= d2
+        && x.Y >= d1 && x.Y <= d2
 
     let allPairs =
         [ for i in 0 .. input.Length - 2 do
